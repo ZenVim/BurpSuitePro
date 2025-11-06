@@ -1,18 +1,20 @@
-## Activated BurpSuite Professional 2025.8.5 for Windows 10/11
+## Activated BurpSuite Professional for Windows 10/11
 
-NOTE: For BurpSuite Professional 2025.8.5 version supports only `jdk-21_windows-x64_bin.exe` if you have any other version uninstall it.
+### Installation
 
-1. Open Command Prompt in the BurpSuitePro-2025.8.5 folder
-2. Install `[jdk-21_windows-x64_bin.exe](https://download.oracle.com/java/21/archive/jdk-21_windows-x64_bin.exe)`:
-3. Install `[burpsuite_pro_v2025.8.5.jar](https://portswigger-cdn.net/burp/releases/download?product=pro&version=2025.8.5&type=Jar)`:
-4. Paste this command in opned Powershell and hit ENTER.
-```
-java -jar loader.jar
-```
-5. Automatically using Powershell
-```
-Copy-Item "BurpSuite Latest.lnk" "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\BurpSuite Latest.lnk"
+Run the installation script in WSL:
+
+```powershell
+cd BurpSuitePro-Latest
+.\Install.ps1
 ```
 
-## Refrences
+The script will automatically:
+- Download and install JDK-21 (if not already installed)
+- Download and install JRE-8 (if not already installed)
+- Download the latest Burp Suite Professional version
+- Set up launcher scripts and shortcuts
+- Handle activation
+
+## References
 - https://github.com/xiv3r/Burpsuite-Professional
