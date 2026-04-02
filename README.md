@@ -14,8 +14,11 @@ This repository contains Burp Suite Professional setup files for Windows.
 
 Navigate to the `BurpSuitePro-Latest` folder and run the installation script:
 
+- Open `Powershell` as administrator and execute below command.
+
 ```powershell
 cd BurpSuitePro-Latest
+Set-ExecutionPolicy -ExecutionPolicy bypass -Scope process
 .\Install.ps1
 ```
 
