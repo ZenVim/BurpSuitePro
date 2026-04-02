@@ -2,7 +2,10 @@
 
 ### Installation
 
-Run the installation script in WSL:
+Open Powershell as administrator and execute below command to set Script Execution Policy.
+```
+Set-ExecutionPolicy -ExecutionPolicy bypass -Scope process
+```
 
 ```powershell
 cd BurpSuitePro-Latest
