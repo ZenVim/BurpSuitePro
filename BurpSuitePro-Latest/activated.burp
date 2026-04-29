@@ -16,7 +16,6 @@ if (-not $isAdmin) {
 $repoUrl = "https://github.com/ZenVim/BurpSuitePro/archive/refs/heads/main.zip"
 $installDir = "C:\BurpSuitePro"
 $tempZip = "$env:TEMP\BurpSuitePro.zip"
-$extractedFolder = "$installDir\BurpSuitePro-main"
 
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  Burp Suite Professional Auto-Setup" -ForegroundColor Cyan
@@ -46,8 +45,26 @@ try {
 # Step 3: Extract the ZIP
 Write-Host "[3/5] Extracting files..." -ForegroundColor Yellow
 try {
-    Expand-Archive -Path $tempZip -DestinationPath $installDir -Force -ErrorAction Stop
+    # Create a temp extraction folder
+    $tempExtractDir = "$env:TEMP\BurpSuiteProExtract"
+    if (Test-Path $tempExtractDir) {
+        Remove-Item -Path $tempExtractDir -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    New-Item -ItemType Directory -Path $tempExtractDir -Force | Out-Null
+    
+    # Extract to temp folder
+    Expand-Archive -Path $tempZip -DestinationPath $tempExtractDir -Force -ErrorAction Stop
     Remove-Item $tempZip -Force -ErrorAction SilentlyContinue
+    
+    # Move contents from the subfolder (e.g., BurpSuitePro-main) to installDir
+    $extractedSubfolder = Get-ChildItem -Path $tempExtractDir -Directory | Select-Object -First 1
+    if ($extractedSubfolder) {
+        Get-ChildItem -Path $extractedSubfolder.FullName | Move-Item -Destination $installDir -Force
+    }
+    
+    # Cleanup temp extract folder
+    Remove-Item -Path $tempExtractDir -Recurse -Force -ErrorAction SilentlyContinue
+    
     Write-Host "        Extraction complete!" -ForegroundColor Green
 } catch {
     Write-Host "        ERROR: Failed to extract files." -ForegroundColor Red
