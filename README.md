@@ -19,6 +19,7 @@ Navigate to the `BurpSuitePro-Latest` folder and run the installation script:
 ```powershell
 cd BurpSuitePro-Latest
 Set-ExecutionPolicy -ExecutionPolicy bypass -Scope process
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\Install.ps1
 ```
 
