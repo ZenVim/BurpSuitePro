@@ -55,52 +55,38 @@ function Get-BurpSuiteLatestVersion {
 $burpSuiteVersion = Get-BurpSuiteLatestVersion
 Write-Host "Installing Burp Suite Professional version $burpSuiteVersion" -ForegroundColor Cyan
 
-# Check JDK-21 Availability or Download JDK-21
-Write-Host "`nChecking for JDK-21 installation..." -ForegroundColor Cyan
-$jdk21 = Get-WmiObject -Class Win32_Product -filter "Vendor='Oracle Corporation'" | Where-Object { $_.Caption -clike "Java(TM) SE Development Kit 21*" }
-if (!($jdk21)) {
-    Write-Host "JDK-21 not found. Downloading Java JDK-21..." -ForegroundColor Yellow
-    $jdkUrl = "https://download.oracle.com/java/21/archive/jdk-21_windows-x64_bin.exe"
-    $jdkInstaller = "$env:TEMP\jdk-21_windows-x64_bin.exe"
-    
-    try {
-        Invoke-WebRequest -Uri $jdkUrl -OutFile $jdkInstaller -UseBasicParsing
-        Write-Host "JDK-21 Downloaded. Starting installation process..." -ForegroundColor Green
-        Start-Process -FilePath $jdkInstaller -ArgumentList "/s" -Wait -NoNewWindow
-        Write-Host "JDK-21 installation completed!" -ForegroundColor Green
-        Remove-Item $jdkInstaller -Force -ErrorAction SilentlyContinue
-    } catch {
-        Write-Host "Error downloading/installing JDK-21: $_" -ForegroundColor Red
-        Remove-Item $jdkInstaller -Force -ErrorAction SilentlyContinue
-        exit 1
-    }
-} else {
-    Write-Host "Required JDK-21 is already installed" -ForegroundColor Green
-    Write-Host "  $($jdk21.Caption)" -ForegroundColor Gray
+# Download and Install JDK-21
+Write-Host "`nDownloading and installing JDK-21..." -ForegroundColor Cyan
+$jdkUrl = "https://download.oracle.com/java/21/archive/jdk-21_windows-x64_bin.exe"
+$jdkInstaller = "$env:TEMP\jdk-21_windows-x64_bin.exe"
+
+try {
+    Invoke-WebRequest -Uri $jdkUrl -OutFile $jdkInstaller -UseBasicParsing
+    Write-Host "JDK-21 Downloaded. Starting installation process..." -ForegroundColor Green
+    Start-Process -FilePath $jdkInstaller -ArgumentList "/s" -Wait -NoNewWindow
+    Write-Host "JDK-21 installation completed!" -ForegroundColor Green
+    Remove-Item $jdkInstaller -Force -ErrorAction SilentlyContinue
+} catch {
+    Write-Host "Error downloading/installing JDK-21: $_" -ForegroundColor Red
+    Remove-Item $jdkInstaller -Force -ErrorAction SilentlyContinue
+    exit 1
 }
 
-# Check JRE-8 Availability or Download JRE-8
-Write-Host "`nChecking for JRE-8 installation..." -ForegroundColor Cyan
-$jre8 = Get-WmiObject -Class Win32_Product -filter "Vendor='Oracle Corporation'" | Where-Object { $_.Caption -clike "Java 8 Update *" }
-if (!($jre8)) {
-    Write-Host "JRE-8 not found. Downloading Java JRE-8..." -ForegroundColor Yellow
-    $jreUrl = "https://javadl.oracle.com/webapps/download/AutoDL?BundleId=247947_0ae14417abb444ebb02b9815e2103550"
-    $jreInstaller = "$env:TEMP\jre-8.exe"
-    
-    try {
-        Invoke-WebRequest -Uri $jreUrl -OutFile $jreInstaller -UseBasicParsing
-        Write-Host "JRE-8 Downloaded. Starting installation process..." -ForegroundColor Green
-        Start-Process -FilePath $jreInstaller -Wait -NoNewWindow
-        Write-Host "JRE-8 installation completed!" -ForegroundColor Green
-        Remove-Item $jreInstaller -Force -ErrorAction SilentlyContinue
-    } catch {
-        Write-Host "Error downloading/installing JRE-8: $_" -ForegroundColor Red
-        Remove-Item $jreInstaller -Force -ErrorAction SilentlyContinue
-        exit 1
-    }
-} else {
-    Write-Host "Required JRE-8 is already installed" -ForegroundColor Green
-    Write-Host "  $($jre8.Caption)" -ForegroundColor Gray
+# Download and Install JRE-8
+Write-Host "`nDownloading and installing JRE-8..." -ForegroundColor Cyan
+$jreUrl = "https://javadl.oracle.com/webapps/download/AutoDL?BundleId=247947_0ae14417abb444ebb02b9815e2103550"
+$jreInstaller = "$env:TEMP\jre-8.exe"
+
+try {
+    Invoke-WebRequest -Uri $jreUrl -OutFile $jreInstaller -UseBasicParsing
+    Write-Host "JRE-8 Downloaded. Starting installation process..." -ForegroundColor Green
+    Start-Process -FilePath $jreInstaller -Wait -NoNewWindow
+    Write-Host "JRE-8 installation completed!" -ForegroundColor Green
+    Remove-Item $jreInstaller -Force -ErrorAction SilentlyContinue
+} catch {
+    Write-Host "Error downloading/installing JRE-8: $_" -ForegroundColor Red
+    Remove-Item $jreInstaller -Force -ErrorAction SilentlyContinue
+    exit 1
 }
 
 # Download Burp Suite Professional
@@ -172,20 +158,15 @@ try {
     Write-Host "Error creating shortcut: $_" -ForegroundColor Red
 }
 
-# Check for Java agent loader component
-Write-Host "`nChecking for Java agent loader component..." -ForegroundColor Cyan
+# Download Java agent loader component
+Write-Host "`nDownloading Java agent loader component..." -ForegroundColor Cyan
 $loaderJarFileName = "loader.jar"
-if (!(Test-Path $loaderJarFileName)) {
-    Write-Host "Downloading Java agent loader component..." -ForegroundColor Yellow
-    try {
-        Invoke-WebRequest -Uri "https://github.com/xiv3r/Burpsuite-Professional/raw/refs/heads/main/loader.jar" -OutFile $loaderJarFileName -UseBasicParsing
-        Write-Host "Java agent loader component downloaded successfully!" -ForegroundColor Green
-    } catch {
-        Write-Host "Error downloading Java agent loader component: $_" -ForegroundColor Red
-        exit 1
-    }
-} else {
-    Write-Host "Java agent loader component is already present" -ForegroundColor Green
+try {
+    Invoke-WebRequest -Uri "https://github.com/xiv3r/Burpsuite-Professional/raw/refs/heads/main/loader.jar" -OutFile $loaderJarFileName -UseBasicParsing
+    Write-Host "Java agent loader component downloaded successfully!" -ForegroundColor Green
+} catch {
+    Write-Host "Error downloading Java agent loader component: $_" -ForegroundColor Red
+    exit 1
 }
 
 # Reload Environment Variables
@@ -193,111 +174,33 @@ Write-Host "`nReloading Environment Variables..." -ForegroundColor Cyan
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
 Write-Host "Environment variables reloaded!" -ForegroundColor Green
 
-# Function to check if BurpSuite is already activated
-function Test-BurpSuiteActivation {
-    $isActivated = $false
-    
-    # Check registry for PortSwigger BurpSuite entries
-    try {
-        $regPath = "HKCU:\Software\PortSwigger\BurpSuite"
-        if (Test-Path $regPath) {
-            $regProps = Get-ItemProperty -Path $regPath -ErrorAction SilentlyContinue
-            if ($regProps) {
-                # Check for common license-related registry values
-                $licenseKeys = @("LicenseKey", "license_key", "License", "license")
-                foreach ($key in $licenseKeys) {
-                    if ($regProps.PSObject.Properties.Name -contains $key -and $regProps.$key) {
-                        $isActivated = $true
-                        Write-Host "Found activation in registry: $regPath\$key" -ForegroundColor Gray
-                        break
-                    }
-                }
-            }
-        }
-    } catch {
-        # Registry check failed, continue with file checks
-    }
-    
-    # Check BurpSuite AppData directory for user preferences/license files
-    if (!$isActivated) {
-        $burpAppData = "$env:APPDATA\BurpSuite"
-        if (Test-Path $burpAppData) {
-            # Check for common BurpSuite preference/license files
-            $licenseFiles = @(
-                "burpsuite_user_options.json",
-                "burpsuite_preferences.json",
-                "license.txt",
-                "license.key"
-            )
-            
-            foreach ($file in $licenseFiles) {
-                $filePath = Join-Path $burpAppData $file
-                if (Test-Path $filePath) {
-                    # Check if file has content (not empty)
-                    $fileContent = Get-Content $filePath -ErrorAction SilentlyContinue
-                    if ($fileContent -and $fileContent.Length -gt 0) {
-                        $isActivated = $true
-                        Write-Host "Found activation file: $filePath" -ForegroundColor Gray
-                        break
-                    }
-                }
-            }
-            
-            # Also check if BurpSuite directory has been used (contains other config files)
-            $configFiles = Get-ChildItem -Path $burpAppData -File -ErrorAction SilentlyContinue
-            if ($configFiles -and $configFiles.Count -gt 0) {
-                # Check for any meaningful config files (not just empty directories)
-                foreach ($configFile in $configFiles) {
-                    if ($configFile.Length -gt 100) {  # File has some content
-                        $isActivated = $true
-                        Write-Host "Found BurpSuite configuration files in: $burpAppData" -ForegroundColor Gray
-                        break
-                    }
-                }
-            }
-        }
-    }
-    
-    return $isActivated
+# Starting activation process
+Write-Host "`nStarting license key generator..." -ForegroundColor Cyan
+try {
+    Start-Process -FilePath "java.exe" -ArgumentList "-jar $loaderJarFileName" -WindowStyle Hidden
+    Write-Host "License key generator started!" -ForegroundColor Green
+} catch {
+    Write-Host "Error starting license key generator: $_" -ForegroundColor Red
 }
 
-# Check if BurpSuite needs activation
-Write-Host "`nChecking BurpSuite activation status..." -ForegroundColor Cyan
-$isActivated = Test-BurpSuiteActivation
-
-if (!$isActivated) {
-    Write-Host "BurpSuite Professional is not activated. Starting activation process..." -ForegroundColor Yellow
-    
-    # Activate Burp Suite Professional with license key generator
-    Write-Host "`nStarting license key generator..." -ForegroundColor Cyan
-    try {
-        Start-Process -FilePath "java.exe" -ArgumentList "-jar $loaderJarFileName"
-        Write-Host "License key generator started!" -ForegroundColor Green
-    } catch {
-        Write-Host "Error starting license key generator: $_" -ForegroundColor Red
-    }
-    
-    Write-Host "`nStarting Burp Suite Professional..." -ForegroundColor Cyan
-    try {
-        $javaArgs = @(
-            "--add-opens=java.desktop/javax.swing=ALL-UNNAMED",
-            "--add-opens=java.base/java.lang=ALL-UNNAMED",
-            "--add-opens=java.base/jdk.internal.org.objectweb.asm=ALL-UNNAMED",
-            "--add-opens=java.base/jdk.internal.org.objectweb.asm.tree=ALL-UNNAMED",
-            "--add-opens=java.base/jdk.internal.org.objectweb.asm.Opcodes=ALL-UNNAMED",
-            "-javaagent:$loaderJarFileName",
-            "-noverify",
-            "-jar",
-            $burpSuiteJarFileName
-        )
-        Start-Process -FilePath "java.exe" -ArgumentList $javaArgs
-        Write-Host "Burp Suite Professional started!" -ForegroundColor Green
-        Write-Host "Please complete the activation process in the opened window." -ForegroundColor Yellow
-    } catch {
-        Write-Host "Error starting Burp Suite Professional: $_" -ForegroundColor Red
-    }
-} else {
-    Write-Host "BurpSuite Professional is already activated. Skipping activation process." -ForegroundColor Green
+Write-Host "`nStarting Burp Suite Professional..." -ForegroundColor Cyan
+try {
+    $javaArgs = @(
+        "--add-opens=java.desktop/javax.swing=ALL-UNNAMED",
+        "--add-opens=java.base/java.lang=ALL-UNNAMED",
+        "--add-opens=java.base/jdk.internal.org.objectweb.asm=ALL-UNNAMED",
+        "--add-opens=java.base/jdk.internal.org.objectweb.asm.tree=ALL-UNNAMED",
+        "--add-opens=java.base/jdk.internal.org.objectweb.asm.Opcodes=ALL-UNNAMED",
+        "-javaagent:$loaderJarFileName",
+        "-noverify",
+        "-jar",
+        $burpSuiteJarFileName
+    )
+    Start-Process -FilePath "java.exe" -ArgumentList $javaArgs -WindowStyle Hidden
+    Write-Host "Burp Suite Professional started!" -ForegroundColor Green
+    Write-Host "Please complete the activation process in the opened window." -ForegroundColor Yellow
+} catch {
+    Write-Host "Error starting Burp Suite Professional: $_" -ForegroundColor Red
 }
 
 Write-Host "`nInstallation and setup completed!" -ForegroundColor Green
