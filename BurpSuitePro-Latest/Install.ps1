@@ -5,55 +5,11 @@
 Write-Host "Configuring download preferences..." -ForegroundColor Yellow
 $ProgressPreference = 'SilentlyContinue'
 
-# Function to fetch the latest Burp Suite Professional version from PortSwigger
-function Get-BurpSuiteLatestVersion {
-    Write-Host "Fetching latest Burp Suite Professional version..." -ForegroundColor Cyan
-    try {
-        # Try to fetch from PortSwigger releases page
-        $releasesUrl = "https://portswigger.net/burp/releases"
-        $response = Invoke-WebRequest -Uri $releasesUrl -UseBasicParsing -ErrorAction Stop
-        
-        # Parse HTML to find version number
-        # Look for version pattern like "2025.10.2" or "2025.8.5" in the page
-        $versionPattern = '\b(20\d{2}\.\d{1,2}\.\d{1,2})\b'
-        $versionMatches = [regex]::Matches($response.Content, $versionPattern)
-        
-        if ($versionMatches.Count -gt 0) {
-            # Get the first (latest) version found
-            $latestVersion = $versionMatches[0].Groups[1].Value
-            Write-Host "Latest version found: $latestVersion" -ForegroundColor Green
-            return $latestVersion
-        }
-        
-        # Fallback: try to get from download URL redirect or API
-        $downloadUrl = "https://portswigger-cdn.net/burp/releases/download?product=pro&type=Jar"
-        $headers = @{
-            'User-Agent' = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
-        $downloadResponse = Invoke-WebRequest -Uri $downloadUrl -Method Head -Headers $headers -UseBasicParsing -ErrorAction Stop
-        
-        # Check Content-Disposition header for filename with version
-        if ($downloadResponse.Headers['Content-Disposition']) {
-            $contentDisposition = $downloadResponse.Headers['Content-Disposition']
-            $versionMatch = [regex]::Match($contentDisposition, 'burpsuite_pro_v(\d{4}\.\d{1,2}\.\d{1,2})')
-            if ($versionMatch.Success) {
-                $latestVersion = $versionMatch.Groups[1].Value
-                Write-Host "Latest version found: $latestVersion" -ForegroundColor Green
-                return $latestVersion
-            }
-        }
-    } catch {
-        Write-Host "Could not fetch latest version automatically. Using fallback version." -ForegroundColor Yellow
-    }
-    
-    # Fallback to a known recent version
-    Write-Host "Using fallback version: 2025.10.2" -ForegroundColor Yellow
-    return "2025.10.2"
+# Check for administrator privileges
+if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Write-Host "This script must be run as Administrator. Please re-run with elevated privileges." -ForegroundColor Red
+    exit 1
 }
-
-# Get the latest version
-$burpSuiteVersion = Get-BurpSuiteLatestVersion
-Write-Host "Installing Burp Suite Professional version $burpSuiteVersion" -ForegroundColor Cyan
 
 # Download and Install JDK-21
 Write-Host "`nDownloading and installing JDK-21..." -ForegroundColor Cyan
@@ -89,16 +45,44 @@ try {
     exit 1
 }
 
+# Fetch latest Burp Suite Professional version from PortSwigger
+Write-Host "`nFetching latest Burp Suite Professional version..." -ForegroundColor Cyan
+try {
+    $releasesResponse = Invoke-WebRequest -Uri "https://portswigger.net/burp/releases" -UseBasicParsing -ErrorAction Stop
+    $versionMatch = [regex]::Match($releasesResponse.Content, '\b(20\d{2}\.\d{1,2}\.\d{1,2})\b')
+    if ($versionMatch.Success) {
+        $burpSuiteVersion = $versionMatch.Groups[1].Value
+        Write-Host "Latest version found: $burpSuiteVersion" -ForegroundColor Green
+    } else {
+        Write-Host "Could not parse version from PortSwigger releases page." -ForegroundColor Red
+        exit 1
+    }
+} catch {
+    Write-Host "Failed to fetch PortSwigger releases page: $_" -ForegroundColor Red
+    exit 1
+}
+
 # Download Burp Suite Professional
 Write-Host "`nDownloading Burp Suite Professional $burpSuiteVersion..." -ForegroundColor Cyan
 $burpSuiteJarFileName = "burpsuite_pro_v$burpSuiteVersion.jar"
-$burpSuiteDownloadUrl = "https://portswigger-cdn.net/burp/releases/download?product=pro&version=$burpSuiteVersion&type=Jar"
+$burpSuiteDownloadUrl = "https://portswigger.net/burp/releases/download?product=desktop&version=$burpSuiteVersion&type=Jar"
 
 try {
     Invoke-WebRequest -Uri $burpSuiteDownloadUrl -OutFile $burpSuiteJarFileName -UseBasicParsing
     Write-Host "Burp Suite Professional downloaded successfully!" -ForegroundColor Green
 } catch {
     Write-Host "Error downloading Burp Suite Professional: $_" -ForegroundColor Red
+    exit 1
+}
+
+# Download Java agent loader component
+Write-Host "`nDownloading Java agent loader component..." -ForegroundColor Cyan
+$loaderJarFileName = "loader.jar"
+try {
+    Invoke-WebRequest -Uri "https://github.com/xiv3r/Burpsuite-Professional/raw/refs/heads/main/loader.jar" -OutFile $loaderJarFileName -UseBasicParsing
+    Write-Host "Java agent loader component downloaded successfully!" -ForegroundColor Green
+} catch {
+    Write-Host "Error downloading Java agent loader component: $_" -ForegroundColor Red
     exit 1
 }
 
@@ -112,7 +96,7 @@ $installationDirectory = $PSScriptRoot
 if ([string]::IsNullOrEmpty($installationDirectory)) {
     $installationDirectory = Get-Location
 }
-$javaCommand = "java --add-opens=java.desktop/javax.swing=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/jdk.internal.org.objectweb.asm=ALL-UNNAMED --add-opens=java.base/jdk.internal.org.objectweb.asm.tree=ALL-UNNAMED --add-opens=java.base/jdk.internal.org.objectweb.asm.Opcodes=ALL-UNNAMED -javaagent:`"$installationDirectory\loader.jar`" -noverify -jar `"$installationDirectory\$burpSuiteJarFileName`""
+$javaCommand = "java --add-opens=java.desktop/javax.swing=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/jdk.internal.org.objectweb.asm=ALL-UNNAMED --add-opens=java.base/jdk.internal.org.objectweb.asm.tree=ALL-UNNAMED --add-opens=java.base/jdk.internal.org.objectweb.asm.Opcodes=ALL-UNNAMED -javaagent:`"$installationDirectory\$loaderJarFileName`" -noverify -jar `"$installationDirectory\$burpSuiteJarFileName`""
 $javaCommand | Add-Content -Path $burpSuiteBatchFileName
 Write-Host "Batch file created successfully!" -ForegroundColor Green
 
@@ -158,29 +142,28 @@ try {
     Write-Host "Error creating shortcut: $_" -ForegroundColor Red
 }
 
-# Download Java agent loader component
-Write-Host "`nDownloading Java agent loader component..." -ForegroundColor Cyan
-$loaderJarFileName = "loader.jar"
-try {
-    Invoke-WebRequest -Uri "https://github.com/xiv3r/Burpsuite-Professional/raw/refs/heads/main/loader.jar" -OutFile $loaderJarFileName -UseBasicParsing
-    Write-Host "Java agent loader component downloaded successfully!" -ForegroundColor Green
-} catch {
-    Write-Host "Error downloading Java agent loader component: $_" -ForegroundColor Red
-    exit 1
-}
-
 # Reload Environment Variables
 Write-Host "`nReloading Environment Variables..." -ForegroundColor Cyan
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
 Write-Host "Environment variables reloaded!" -ForegroundColor Green
 
+# Resolve java.exe path
+$javaCmd = Get-Command java -ErrorAction SilentlyContinue
+if ($javaCmd) {
+    $javaExe = $javaCmd.Source
+} else {
+    Write-Host "java.exe not found in PATH. Ensure JDK-21 installed correctly." -ForegroundColor Red
+    exit 1
+}
+
 # Starting activation process
 Write-Host "`nStarting license key generator..." -ForegroundColor Cyan
 try {
-    Start-Process -FilePath "java.exe" -ArgumentList "-jar $loaderJarFileName" -WindowStyle Hidden
+    Start-Process -FilePath $javaExe -ArgumentList "-jar `"$loaderJarFileName`"" -WindowStyle Hidden
     Write-Host "License key generator started!" -ForegroundColor Green
 } catch {
     Write-Host "Error starting license key generator: $_" -ForegroundColor Red
+    exit 1
 }
 
 Write-Host "`nStarting Burp Suite Professional..." -ForegroundColor Cyan
@@ -196,7 +179,7 @@ try {
         "-jar",
         $burpSuiteJarFileName
     )
-    Start-Process -FilePath "java.exe" -ArgumentList $javaArgs -WindowStyle Hidden
+    Start-Process -FilePath $javaExe -ArgumentList $javaArgs -WindowStyle Hidden
     Write-Host "Burp Suite Professional started!" -ForegroundColor Green
     Write-Host "Please complete the activation process in the opened window." -ForegroundColor Yellow
 } catch {
