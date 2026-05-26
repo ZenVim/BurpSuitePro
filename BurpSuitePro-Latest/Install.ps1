@@ -47,17 +47,31 @@ try {
 
 # Fetch latest Burp Suite Professional version from PortSwigger
 Write-Host "`nFetching latest Burp Suite Professional version..." -ForegroundColor Cyan
+
 try {
-    $releasesResponse = Invoke-WebRequest -Uri "https://portswigger.net/burp/releases" -UseBasicParsing -ErrorAction Stop
-    $versionMatch = [regex]::Match($releasesResponse.Content, '\b(20\d{2}\.\d{1,2}\.\d{1,2})\b')
-    if ($versionMatch.Success) {
-        $burpSuiteVersion = $versionMatch.Groups[1].Value
+    $releasesResponse = Invoke-WebRequest `
+        -Uri "https://portswigger.net/burp/releases#professional" `
+        -UseBasicParsing `
+        -ErrorAction Stop
+
+    # Match full string: "Professional / Community 2026.4.3"
+    $match = [regex]::Match(
+        $releasesResponse.Content,
+        'Professional \/ Community (20\d{2}\.\d+\.\d+)'
+    )
+
+    if ($match.Success) {
+        # Capture only version number
+        $burpSuiteVersion = $match.Groups[1].Value
+
         Write-Host "Latest version found: $burpSuiteVersion" -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host "Could not parse version from PortSwigger releases page." -ForegroundColor Red
         exit 1
     }
-} catch {
+}
+catch {
     Write-Host "Failed to fetch PortSwigger releases page: $_" -ForegroundColor Red
     exit 1
 }
