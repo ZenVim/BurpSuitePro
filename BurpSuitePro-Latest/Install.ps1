@@ -45,8 +45,8 @@ try {
     exit 1
 }
 
-# Fetch latest 10 Burp Suite Professional versions from PortSwigger
-Write-Host "`nFetching latest 10 Burp Suite Professional versions..." -ForegroundColor Cyan
+# Fetch latest 15 Burp Suite Professional versions from PortSwigger
+Write-Host "`nFetching latest 15 Burp Suite Professional versions..." -ForegroundColor Cyan
 
 try {
     $releasesResponse = Invoke-WebRequest `
@@ -54,33 +54,33 @@ try {
         -UseBasicParsing `
         -ErrorAction Stop
 
-    # Match all version strings: "Professional / Community 2026.4.3" or "Professional / Community 2026.8"
+    # Match all version strings in the exact format: "Professional / Community 2026.8"
     $matches = [regex]::Matches(
         $releasesResponse.Content,
         'Professional \/ Community (20\d{2}\.\d+(?:\.\d+)?)'
     )
 
     if ($matches.Count -gt 0) {
-        # Extract unique versions and take first 10
+        # Extract unique versions
         $versions = @()
         foreach ($match in $matches) {
             $version = $match.Groups[1].Value
             if ($versions -notcontains $version) {
                 $versions += $version
             }
-            if ($versions.Count -ge 10) {
-                break
-            }
         }
+        
+        # Sort versions (newest first) and take first 15
+        $versions = $versions | Sort-Object -Descending | Select-Object -First 15
 
         # Display version selection menu
         Write-Host "`nAvailable Burp Suite Professional versions:" -ForegroundColor Cyan
         Write-Host "=" * 50 -ForegroundColor Gray
         for ($i = 0; $i -lt $versions.Count; $i++) {
             if ($i -eq 0) {
-                Write-Host "$($i + 1). $($versions[$i]) (Latest)" -ForegroundColor Green
+                Write-Host "$($i + 1). Professional / Community $($versions[$i]) (Latest)" -ForegroundColor Green
             } else {
-                Write-Host "$($i + 1). $($versions[$i])" -ForegroundColor White
+                Write-Host "$($i + 1). Professional / Community $($versions[$i])" -ForegroundColor White
             }
         }
         Write-Host "=" * 50 -ForegroundColor Gray
