@@ -60,6 +60,9 @@ try {
         'Professional \/ Community (20\d{2}\.\d+(?:\.\d+)?)'
     )
 
+    # Debug: Show how many matches were found
+    Write-Host "Found $($matches.Count) version matches on the page" -ForegroundColor Yellow
+
     if ($matches.Count -gt 0) {
         # Extract unique versions
         $versions = @()
@@ -68,6 +71,28 @@ try {
             if ($versions -notcontains $version) {
                 $versions += $version
             }
+        }
+        
+        # Debug: Show unique versions found
+        Write-Host "Found $($versions.Count) unique versions" -ForegroundColor Yellow
+        
+        # If we have fewer than 15 unique versions, try alternative patterns
+        if ($versions.Count -lt 15) {
+            Write-Host "Using alternative patterns to find more versions..." -ForegroundColor Yellow
+            
+            # Try broader pattern to catch more versions
+            $altMatches = [regex]::Matches(
+                $releasesResponse.Content,
+                '(20\d{2}\.\d+(?:\.\d+)?)'
+            )
+            
+            foreach ($match in $altMatches) {
+                $version = $match.Groups[1].Value
+                if ($versions -notcontains $version) {
+                    $versions += $version
+                }
+            }
+            Write-Host "Now have $($versions.Count) unique versions after alternative search" -ForegroundColor Yellow
         }
         
         # Sort versions (newest first) and take first 15
