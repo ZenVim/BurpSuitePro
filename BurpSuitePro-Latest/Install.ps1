@@ -45,8 +45,8 @@ try {
     exit 1
 }
 
-# Fetch latest Burp Suite Professional version from PortSwigger
-Write-Host "`nFetching latest Burp Suite Professional version..." -ForegroundColor Cyan
+# Fetch latest 10 Burp Suite Professional versions from PortSwigger
+Write-Host "`nFetching latest 10 Burp Suite Professional versions..." -ForegroundColor Cyan
 
 try {
     $releasesResponse = Invoke-WebRequest `
@@ -54,20 +54,51 @@ try {
         -UseBasicParsing `
         -ErrorAction Stop
 
-    # Match full string: "Professional / Community 2026.4.3"
-    $match = [regex]::Match(
+    # Match all version strings: "Professional / Community 2026.4.3" or "Professional / Community 2026.8"
+    $matches = [regex]::Matches(
         $releasesResponse.Content,
-        'Professional \/ Community (20\d{2}\.\d+\.\d+)'
+        'Professional \/ Community (20\d{2}\.\d+(?:\.\d+)?)'
     )
 
-    if ($match.Success) {
-        # Capture only version number
-        $burpSuiteVersion = $match.Groups[1].Value
+    if ($matches.Count -gt 0) {
+        # Extract unique versions and take first 10
+        $versions = @()
+        foreach ($match in $matches) {
+            $version = $match.Groups[1].Value
+            if ($versions -notcontains $version) {
+                $versions += $version
+            }
+            if ($versions.Count -ge 10) {
+                break
+            }
+        }
 
-        Write-Host "Latest version found: $burpSuiteVersion" -ForegroundColor Green
+        # Display version selection menu
+        Write-Host "`nAvailable Burp Suite Professional versions:" -ForegroundColor Cyan
+        Write-Host "=" * 50 -ForegroundColor Gray
+        for ($i = 0; $i -lt $versions.Count; $i++) {
+            if ($i -eq 0) {
+                Write-Host "$($i + 1). $($versions[$i]) (Latest)" -ForegroundColor Green
+            } else {
+                Write-Host "$($i + 1). $($versions[$i])" -ForegroundColor White
+            }
+        }
+        Write-Host "=" * 50 -ForegroundColor Gray
+
+        # Get user selection
+        $selection = 0
+        while ($selection -lt 1 -or $selection -gt $versions.Count) {
+            $selectionInput = Read-Host "`nSelect version number (1-$($versions.Count))"
+            if ($selectionInput -match '^\d+$') {
+                $selection = [int]$selectionInput
+            }
+        }
+
+        $burpSuiteVersion = $versions[$selection - 1]
+        Write-Host "`nSelected version: $burpSuiteVersion" -ForegroundColor Green
     }
     else {
-        Write-Host "Could not parse version from PortSwigger releases page." -ForegroundColor Red
+        Write-Host "Could not parse versions from PortSwigger releases page." -ForegroundColor Red
         exit 1
     }
 }
