@@ -70,22 +70,6 @@ try {
             }
         }
         
-        # If we have fewer than 15 unique versions, try alternative patterns
-        if ($versions.Count -lt 15) {
-            # Try broader pattern to catch more versions
-            $altMatches = [regex]::Matches(
-                $releasesResponse.Content,
-                '(20\d{2}\.\d+(?:\.\d+)?)'
-            )
-            
-            foreach ($match in $altMatches) {
-                $version = $match.Groups[1].Value
-                if ($versions -notcontains $version) {
-                    $versions += $version
-                }
-            }
-        }
-        
         # Sort versions (newest first) and take first 15
         $versions = $versions | Sort-Object -Descending | Select-Object -First 15
 
